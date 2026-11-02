@@ -1,8 +1,9 @@
 ---
 plan: morning-digest
-status: ready
+status: done
 owner: rook
 opened: 2026-10-29
+closed: 2026-11-02
 ---
 
 # Morning digest
@@ -77,3 +78,20 @@ page again with `LANE_MARKER` unset (the banner reads "no marker set") and uploa
 link. Move this plan to `docs/plans/done/` with its issue list.
 
 Done when: the preview link no longer shows the lane marker.
+
+## Issues
+
+| # | Issue | Blocked by | Worker | Closed |
+|---|-------|-----------|--------|--------|
+| 1 | Run log reader | — | claude-code · fable-5.1 · low | 2026-11-02 |
+| 2 | Digest page: GET /digest/:night | #1 | claude-code · sonnet-5.5 · low | 2026-11-02 |
+| 3 | Digest JSON: GET /api/digest/:night | #1 | claude-code · sonnet-5.5 · low | 2026-11-02 |
+| 4 | Board link: nights link to their digest with counts | #1 | claude-code · sonnet-5.5 · low | 2026-11-02 |
+| 5 | Route tests for the digest page and JSON | #1 #2 #3 | claude-code · sonnet-5.5 · low | 2026-11-02 |
+| 6 | Preview for review | #2 #3 #4 #5 | claude-code · fable-5.1 · medium | 2026-11-02 |
+| 7 | Clean up: remove the lane marker from the preview, file the plan as done | #6, review in | claude-code · fable-5.1 · medium | 2026-11-02 |
+
+#1 changed one test expectation during review: lane/sync has 8 runs, not 9, because line 16 of
+`runs/2026-10-28.jsonl` is truncated and counts as the night's bad line, not as a run.
+The preview was published by `.github/workflows/preview.yml` (GitHub Pages, build artifact), so
+no copy of the page entered git; the clean-up re-ran it with `LANE_MARKER` empty.
