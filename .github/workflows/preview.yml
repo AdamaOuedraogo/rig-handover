@@ -1,0 +1,65 @@
+# Preview for review (plan.md § 3, § 4; ADR 0003).
+# Runs rig, saves /digest/<night> as one self-contained HTML file and publishes it to GitHub
+# Pages as a build artifact. The HTML never enters git. The lane marker comes in as a
+# workflow_dispatch input and is never written into this file. Re-run with the input empty to
+# publish the same page with "no marker set" (clean up, § 4).
+name: preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      night:
+        description: Night to render (YYYY-MM-DD)
+        required: true
+        default: "2026-10-28"
+      lane_marker:
+        description: LANE_MARKER shown in the banner. Leave empty to publish without a marker.
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run rig and save the page
+        env:
+          LANE_ID: lane-07
+          LANE_MARKER: ${{ inputs.lane_marker }}
+          PORT: "8787"
+        run: |
+          pnpm start > rig.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:8787/health > /dev/null && break; sleep 1; done
+          mkdir -p preview
+          curl -sf "http://localhost:8787/digest/${{ inputs.night }}" -o preview/index.html
+          test -s preview/index.html
+          kill %1 || true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: preview
+  deploy:
+    needs: render
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
